@@ -1,71 +1,68 @@
+// Clase Servidor
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 public class Servidor {
-    private static final int PUERTO = 4444; // Puerto del servidor
-    private static Set<ClientHandler> clientes = Collections.synchronizedSet(new HashSet<>());
+    private static final int PUERTO = 4444;
+    private static List<ClienteHandler> clientes = new ArrayList<>();
 
     public static void main(String[] args) {
-        System.out.println("Servidor iniciado. Esperando conexiones...");
         try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
-            while (true) {
-                Socket clientSocket = serverSocket.accept(); // Aceptar conexión
-                System.out.println("Cliente conectado: " + clientSocket.getInetAddress());
+            System.out.println("Servidor iniciado, esperando conexiones...");
 
-                // Crear un manejador para el cliente
-                ClientHandler clientHandler = new ClientHandler(clientSocket);
-                clientes.add(clientHandler); // Agregar cliente al conjunto
-                new Thread(clientHandler).start(); // Iniciar hilo para el cliente
+            while (true) {
+                Socket socket = serverSocket.accept();
+                System.out.println("Cliente conectado: " + socket.getInetAddress());
+                ClienteHandler clienteHandler = new ClienteHandler(socket);
+                clientes.add(clienteHandler);
+                new Thread(clienteHandler).start();
             }
         } catch (IOException e) {
             System.err.println("Error en el servidor: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
-    // Enviar un mensaje a todos los clientes conectados
-    public static void broadcast(DatosJuego datos) {
-        synchronized (clientes) {
-            for (ClientHandler cliente : clientes) {
-                cliente.enviarDatos(datos);
-            }
-        }
-    }
-
-    // Clase para manejar cada cliente
-    private static class ClientHandler implements Runnable {
+    // Esta clase maneja la comunicación con cada cliente
+    private static class ClienteHandler implements Runnable {
         private Socket socket;
         private ObjectOutputStream out;
         private ObjectInputStream in;
+        private DatosJuego datosJuego;
 
-        public ClientHandler(Socket socket) {
+        public ClienteHandler(Socket socket) {
             this.socket = socket;
+            this.datosJuego = new DatosJuego(500); // Meta en 500, por ejemplo
         }
 
         @Override
         public void run() {
             try {
-                // Configurar flujos de entrada y salida
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
 
-                // Escuchar datos del cliente
-                while (true) {
-                    DatosJuego datos = (DatosJuego) in.readObject();
-                    System.out.println("Datos recibidos del cliente: " + datos);
+                // Enviar el estado del juego al cliente
+                enviarDatos(datosJuego);
 
-                    // Reenviar datos a todos los clientes
-                    Servidor.broadcast(datos);
+                while (true) {
+                    // Recibir datos del cliente (posiciones de las bolas)
+                    DatosJuego datos = (DatosJuego) in.readObject();
+                    // Actualizar el estado del juego aquí
+
+                    // Enviar actualización a todos los clientes
+                    for (ClienteHandler cliente : clientes) {
+                        cliente.enviarDatos(datos);
+                    }
                 }
             } catch (IOException | ClassNotFoundException e) {
-                System.err.println("Cliente desconectado: " + e.getMessage());
+                e.printStackTrace();
             } finally {
                 try {
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                clientes.remove(this); // Eliminar cliente del conjunto
             }
         }
 
@@ -74,7 +71,7 @@ public class Servidor {
                 out.writeObject(datos);
                 out.flush();
             } catch (IOException e) {
-                System.err.println("Error al enviar datos al cliente: " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }

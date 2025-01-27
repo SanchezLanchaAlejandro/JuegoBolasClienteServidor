@@ -1,63 +1,72 @@
-import java.awt.Color;
+import java.awt.*;
+import java.io.*;
+import java.net.*;
 
 public class Bola extends Thread {
-    private int x; // Posición X de la bola
-    private final int y; // Posición Y de la bola
-    private final int tamaño; // Tamaño de la bola
-    private final Color color; // Color de la bola
-    private int velocidad; // Velocidad de la bola
-    private boolean corriendo = true; // Control del movimiento
-    private final int meta; // Coordenada de la meta
+    private int x, y, tamaño, velocidad;
+    private Color color;
+    private DatosJuego datosJuego;
+    private Socket socket;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
+    private boolean conectado = false;
 
-    public Bola(int x, int y, int tamaño, Color color, int velocidad, int meta) {
+    public Bola(int x, int y, int tamaño, Color color, int velocidad, DatosJuego datosJuego) {
         this.x = x;
         this.y = y;
         this.tamaño = tamaño;
         this.color = color;
         this.velocidad = velocidad;
-        this.meta = meta;
+        this.datosJuego = datosJuego;
     }
 
     @Override
     public void run() {
-        while (corriendo && x < meta) { // Se mueve mientras no alcance la meta
-            x += velocidad; // Mover la bola según su velocidad
-            try {
-                Thread.sleep(20); // Pausa para simular el movimiento
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        try {
+            // Establecer la conexión con el servidor
+            socket = new Socket("localhost", 4444);
+            out = new ObjectOutputStream(socket.getOutputStream());
+            in = new ObjectInputStream(socket.getInputStream());
+            conectado = true;
+
+            // Enviar datos al servidor (estado inicial)
+            out.writeObject(datosJuego);
+            out.flush();
+
+            while (conectado) {
+                // Simular el movimiento de la bola
+                x += velocidad;
+                if (x > datosJuego.getMeta()) {
+                    datosJuego.setGanador("Bola " + color);
+                    break;
+                }
+
+                // Enviar la nueva posición al servidor (se debe enviar la nueva posición de cada bola)
+                out.writeObject(new DatosJuego(x, y));  // Enviar solo posiciones
+                out.flush();
+
+                // Dormir el hilo para simular el movimiento
+                Thread.sleep(50);
             }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
         }
-        corriendo = false; // Detener la bola al llegar a la meta
     }
 
-    // Métodos para controlar la bola
-    public void detener() {
-        corriendo = false;
-    }
+    // Getters para la posición y el tamaño
+    public int getX() { return x; }
+    public int getY() { return y; }
+    public int getTamaño() { return tamaño; }
+    public Color getColor() { return color; }
 
-    public void ajustarVelocidad(int nuevaVelocidad) {
-        this.velocidad = nuevaVelocidad; // Cambia la velocidad dinámicamente
-    }
-
-    // Métodos para obtener los datos de la bola
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getTamaño() {
-        return tamaño;
-    }
-
-    public Color getColor() {
-        return color;
-    }
-
-    public boolean isCorriendo() {
-        return corriendo;
+    public void desconectar() {
+        try {
+            conectado = false;
+            if (socket != null) {
+                socket.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -11,17 +11,26 @@ public class DatosJuego implements Serializable {
     private boolean juegoTerminado; // Indica si el juego terminó
     private String ganador; // Nombre del ganador ("Jugador 1" o "Jugador 2")
 
+    // Constructor original con meta
     public DatosJuego(int meta) {
         this.meta = meta;
         this.posicionBola1 = 0;
         this.posicionBola2 = 0;
-        this.velocidadBola1 = 5; // Velocidad inicial
-        this.velocidadBola2 = 5; // Velocidad inicial
+        this.velocidadBola1 = 5;
+        this.velocidadBola2 = 5;
         this.juegoTerminado = false;
         this.ganador = null;
     }
 
-    // Getters y setters
+    // Constructor adicional para actualizar solo las posiciones
+    public DatosJuego(int x, int y) {
+        this.posicionBola1 = x;
+        this.posicionBola2 = y;
+        this.velocidadBola1 = 5; // O cualquier valor por defecto
+        this.velocidadBola2 = 5; // O cualquier valor por defecto
+    }
+
+    // Getters y setters...
     public int getPosicionBola1() {
         return posicionBola1;
     }
