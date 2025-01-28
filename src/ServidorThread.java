@@ -29,9 +29,9 @@ public class ServidorThread extends Thread {
     public void run() {
         try {
 
-            // Enviar rol al cliente (Jugador 1 o Jugador 2)
-            out.writeBoolean(soyJugador1); // Enviar si es Jugador 1
-            out.writeBoolean(soyJugador2); // Enviar si es Jugador 2
+            // Enviar confirmación de inicio al cliente
+            out.writeBoolean(soyJugador1);
+            out.writeBoolean(soyJugador2);
             out.flush();
 
             // Escuchar mensajes del cliente
@@ -39,11 +39,11 @@ public class ServidorThread extends Thread {
                 Object mensaje = in.readObject();
                 if (CONFIRMAR_INICIO.equals(mensaje)) {
                     int indice = clientes.indexOf(this);
-                    confirmaciones[indice] = true; // Marcar cliente como listo
+                    confirmaciones[indice] = true; // Cliente ha confirmado estar listo
                 } else if (mensaje instanceof EstadoJuego) {
                     EstadoJuego estado = (EstadoJuego) mensaje;
                     for (ServidorThread cliente : clientes) {
-                        cliente.enviarEstado(estado); // Retransmitir estado a todos los clientes
+                        cliente.enviarEstado(estado); // Enviar estado actualizado a todos los clientes
                     }
                 }
             }

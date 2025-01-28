@@ -25,7 +25,7 @@ public class ClienteThread extends Thread {
     public void run() {
         try {
             while (true) {
-                Object mensaje = in.readObject(); // Leer mensajes del servidor
+                Object mensaje = in.readObject(); // Leer mensaje del servidor
                 if (mensaje instanceof EstadoJuego) {
                     EstadoJuego estado = (EstadoJuego) mensaje;
                     cliente.actualizarEstado(estado); // Actualizar estado recibido
@@ -39,7 +39,7 @@ public class ClienteThread extends Thread {
 
     public void enviarConfirmacionInicio() {
         try {
-            out.writeObject(CONFIRMAR_INICIO); // Enviar confirmación de inicio al servidor
+            out.writeObject(CONFIRMAR_INICIO); // Enviar confirmación de inicio
             out.flush();
         } catch (IOException e) {
             System.out.println("Error al enviar confirmación de inicio.");

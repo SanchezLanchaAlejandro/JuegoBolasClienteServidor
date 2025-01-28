@@ -72,7 +72,7 @@ public class Cliente extends JFrame {
 
                     // Dibujar información del jugador
                     g2.setFont(new Font("Commic Sans", Font.BOLD, 25));
-                    g2.setColor(Color.WHITE); // Contraste sobre el fondo
+                    g2.setColor(Color.WHITE);
 
                     if (soyJugador1){
                         nombrePantalla = "J1: " + nombreJugador;
@@ -95,14 +95,14 @@ public class Cliente extends JFrame {
 
             JButton botonIniciar = new JButton("Iniciar Carrera");
             botonIniciar.addActionListener(e -> {
-                clienteThread.enviarConfirmacionInicio(); // Confirmar inicio al servidor
+                clienteThread.enviarConfirmacionInicio(); // Enviar confirmación de inicio al servidor
                 botonIniciar.setEnabled(false);
             });
 
             JButton botonVelocidad = new JButton("Más Velocidad!!!");
-            botonVelocidad.setEnabled(false); // Habilitar cuando la carrera inicie
+            botonVelocidad.setEnabled(false); // Desactivar botón inicialmente
             botonVelocidad.addActionListener(e -> {
-                // Incrementar velocidad de la bola correspondiente
+                // Incrementar velocidad del balon correspondiente
                 if (soyJugador1) {
                     estadoJuego.ball1Speed += 2;
                 } else if (soyJugador2) {
@@ -118,11 +118,11 @@ public class Cliente extends JFrame {
             frame.add(panel);
             frame.setVisible(true);
 
-            // Iniciar hilo para manejar la comunicación con el servidor
+            // Crear e iniciar el hilo del cliente
             clienteThread = new ClienteThread(this, botonVelocidad, socket, in, out);
             clienteThread.start();
 
-            // Temporizador para actualizar la animación
+            // Iniciar la carrera
             new Timer(30, e -> {
                 if (carreraIniciada) {
                     estadoJuego.ball1X += estadoJuego.ball1Speed;
@@ -163,6 +163,6 @@ public class Cliente extends JFrame {
     }
 
     public static void main(String[] args) {
-        new Cliente(); // Iniciar cliente
+        new Cliente();
     }
 }
