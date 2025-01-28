@@ -1,78 +1,47 @@
-// Clase Servidor
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Servidor {
-    private static final int PUERTO = 4444;
-    private static List<ClienteHandler> clientes = new ArrayList<>();
+    private static final String CONFIRMAR_INICIO = "CONFIRMAR_INICIO";
 
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(PUERTO)) {
-            System.out.println("Servidor iniciado, esperando conexiones...");
+        int puerto = 4444;
+        CopyOnWriteArrayList<ServidorThread> clientes = new CopyOnWriteArrayList<>();
+        boolean[] confirmaciones = new boolean[2]; // Almacena si los dos jugadores han confirmado estar listos.
+        int contadorClientes = 0; // Contador de clientes conectados,
+        // para asignar roles a los clientes en función del orden de conexión (Jugador 1 o Jugador 2).
 
-            while (true) {
-                Socket socket = serverSocket.accept();
-                System.out.println("Cliente conectado: " + socket.getInetAddress());
-                ClienteHandler clienteHandler = new ClienteHandler(socket);
-                clientes.add(clienteHandler);
-                new Thread(clienteHandler).start();
+        try (ServerSocket serverSocket = new ServerSocket(puerto)) {
+            System.out.println("Servidor iniciado en el puerto " + puerto);
+
+            // Aceptar conexiones de hasta dos clientes
+            while (clientes.size() < 2) {
+                Socket clienteSocket = serverSocket.accept();
+
+                // Asignar rol al cliente según el orden de entrada
+                contadorClientes++;
+                boolean soyJugador1 = (contadorClientes == 1); // El primer cliente es Jugador 1
+
+                // Crear el hilo del cliente
+                ServidorThread cliente = new ServidorThread(clienteSocket, clientes, confirmaciones, soyJugador1);
+                clientes.add(cliente); // Añadir cliente a la lista compartida
+                cliente.start(); // Iniciar el hilo para manejar la comunicación con el cliente
             }
-        } catch (IOException e) {
+
+            // Esperar hasta que ambos clientes confirmen estar listos
+            while (!confirmaciones[0] || !confirmaciones[1]) {
+                Thread.sleep(100);
+            }
+
+            // Iniciar la carrera y enviar el estado inicial del juego a ambos clientes
+            EstadoJuego estadoInicial = new EstadoJuego(700); // Línea de meta en la posición 700
+            estadoInicial.carreraIniciada = true;
+            for (ServidorThread cliente : clientes) {
+                cliente.enviarEstado(estadoInicial); // Enviar estado inicial a cada cliente
+            }
+        } catch (Exception e) {
             System.err.println("Error en el servidor: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    // Esta clase maneja la comunicación con cada cliente
-    private static class ClienteHandler implements Runnable {
-        private Socket socket;
-        private ObjectOutputStream out;
-        private ObjectInputStream in;
-        private DatosJuego datosJuego;
-
-        public ClienteHandler(Socket socket) {
-            this.socket = socket;
-            this.datosJuego = new DatosJuego(500); // Meta en 500, por ejemplo
-        }
-
-        @Override
-        public void run() {
-            try {
-                out = new ObjectOutputStream(socket.getOutputStream());
-                in = new ObjectInputStream(socket.getInputStream());
-
-                // Enviar el estado del juego al cliente
-                enviarDatos(datosJuego);
-
-                while (true) {
-                    // Recibir datos del cliente (posiciones de las bolas)
-                    DatosJuego datos = (DatosJuego) in.readObject();
-                    // Actualizar el estado del juego aquí
-
-                    // Enviar actualización a todos los clientes
-                    for (ClienteHandler cliente : clientes) {
-                        cliente.enviarDatos(datos);
-                    }
-                }
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        public void enviarDatos(DatosJuego datos) {
-            try {
-                out.writeObject(datos);
-                out.flush();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
     }
 }
