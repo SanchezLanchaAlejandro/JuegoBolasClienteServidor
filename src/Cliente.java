@@ -10,35 +10,43 @@ public class Cliente extends JFrame {
     private JPanel panel;
     private EstadoJuego estadoJuego;
     private ClienteThread clienteThread;
+    private String nombreJugador;
+    private String nombrePantalla;
     private boolean carreraIniciada = false;
     private boolean soyJugador1;
+    private boolean soyJugador2;
+
 
     // Imágenes
     private ImageIcon fondoImagen;
     private ImageIcon bola1Imagen;
     private ImageIcon bola2Imagen;
+    private ImageIcon bola3Imagen;
     private BufferedImage buffer;
 
     public Cliente() {
         estadoJuego = new EstadoJuego(700); // Línea de meta en la posición 700
+
+        nombreJugador = JOptionPane.showInputDialog("Por favor, ingresa tu nombre:");
 
         try {
             // Cargar imágenes
             fondoImagen = new ImageIcon("res/imagen_fondo.jpg");
             bola1Imagen = new ImageIcon("res/balon1.png");
             bola2Imagen = new ImageIcon("res/balon2.png");
+            bola3Imagen = new ImageIcon("res/balon3.png");
 
             // Conexión al servidor
             Socket socket = new Socket("127.0.0.1", 4444);
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 
-            // Recibir rol desde el servidor antes de configurar la interfaz gráfica del cliente para que no pete
             soyJugador1 = in.readBoolean();
+            soyJugador2 = in.readBoolean();
 
             // Configurar la interfaz gráfica
             frame = new JFrame("Juego de Carreras");
-            frame.setSize(800, 400);
+            frame.setSize(800, 600);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
             panel = new JPanel() {
@@ -57,15 +65,25 @@ public class Cliente extends JFrame {
                     // Dibujar fondo
                     g2.drawImage(fondoImagen.getImage(), 0, 0, getWidth(), getHeight(), null);
 
-                    // Dibujar los cohetes
+                    // Dibujar las bolas
                     g2.drawImage(bola1Imagen.getImage(), estadoJuego.ball1X, 100, 80, 80, null);
                     g2.drawImage(bola2Imagen.getImage(), estadoJuego.ball2X, 250, 80, 80, null);
+                    g2.drawImage(bola3Imagen.getImage(), estadoJuego.ball3X, 400, 80, 80, null);
 
                     // Dibujar información del jugador
                     g2.setFont(new Font("Commic Sans", Font.BOLD, 25));
                     g2.setColor(Color.WHITE); // Contraste sobre el fondo
-                    String jugador = soyJugador1 ? "Jugador 1" : "Jugador 2";
-                    g2.drawString(jugador, 10, 30); // Dibuja la información en la esquina superior izquierda
+
+                    if (soyJugador1){
+                        nombrePantalla = "J1: " + nombreJugador;
+                    }
+                    else if (soyJugador2){
+                        nombrePantalla = "J2: " + nombreJugador;
+                    }else {
+                        nombrePantalla = "J3: " + nombreJugador;
+                    }
+
+                    g2.drawString(nombrePantalla, 10, 30); // Dibuja la información en la esquina superior izquierda
 
                     g2.dispose();
                     // Dibujar el buffer en la pantalla
@@ -87,8 +105,10 @@ public class Cliente extends JFrame {
                 // Incrementar velocidad de la bola correspondiente
                 if (soyJugador1) {
                     estadoJuego.ball1Speed += 2;
-                } else {
+                } else if (soyJugador2) {
                     estadoJuego.ball2Speed += 2;
+                }else {
+                    estadoJuego.ball3Speed += 2;
                 }
                 clienteThread.enviarEstado(estadoJuego); // Enviar estado actualizado al servidor
             });
@@ -107,13 +127,27 @@ public class Cliente extends JFrame {
                 if (carreraIniciada) {
                     estadoJuego.ball1X += estadoJuego.ball1Speed;
                     estadoJuego.ball2X += estadoJuego.ball2Speed;
+                    estadoJuego.ball3X += estadoJuego.ball3Speed;
+
                     panel.repaint();
 
                     // Verificar si alguna bola cruza la línea de meta
-                    if (estadoJuego.ball1X >= estadoJuego.finishLine || estadoJuego.ball2X >= estadoJuego.finishLine) {
+                    if (estadoJuego.ball1X >= estadoJuego.finishLine ||
+                            estadoJuego.ball2X >= estadoJuego.finishLine ||
+                            estadoJuego.ball3X >= estadoJuego.finishLine) {
+
                         ((Timer) e.getSource()).stop();
-                        String ganador = estadoJuego.ball1X >= estadoJuego.finishLine ? "Jugador 1" : "Jugador 2";
-                        JOptionPane.showMessageDialog(frame, ganador + " ha ganado!");
+
+                        String ganador;
+                        if (estadoJuego.ball1X >= estadoJuego.finishLine) {
+                            ganador = "🏆 El jugador 1";
+                        } else if (estadoJuego.ball2X >= estadoJuego.finishLine) {
+                            ganador = "🏆 El jugador 2";
+                        } else {
+                            ganador = "🏆 El jugador 3";
+                        }
+
+                        JOptionPane.showMessageDialog(frame, ganador + " ha ganado!! 🥳🏁");
                     }
                 }
             }).start();

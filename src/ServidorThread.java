@@ -13,12 +13,14 @@ public class ServidorThread extends Thread {
     private CopyOnWriteArrayList<ServidorThread> clientes; // Lista compartida de clientes
     private boolean[] confirmaciones; // Array que indica si los clientes están listos
     private boolean soyJugador1; // Indica si este cliente es el Jugador 1
+    private boolean soyJugador2; // Indica si este cliente es el jugador 2
 
-    public ServidorThread(Socket socket, CopyOnWriteArrayList<ServidorThread> clientes, boolean[] confirmaciones, boolean soyJugador1) throws IOException {
+    public ServidorThread(Socket socket, CopyOnWriteArrayList<ServidorThread> clientes, boolean[] confirmaciones, boolean soyJugador1, boolean soyJugador2) throws IOException {
         this.socket = socket;
         this.clientes = clientes;
         this.confirmaciones = confirmaciones;
         this.soyJugador1 = soyJugador1;
+        this.soyJugador2 = soyJugador2;
         this.out = new ObjectOutputStream(socket.getOutputStream());
         this.in = new ObjectInputStream(socket.getInputStream());
     }
@@ -26,8 +28,10 @@ public class ServidorThread extends Thread {
     @Override
     public void run() {
         try {
-            // Enviar rol al cliente
-            out.writeBoolean(soyJugador1); // Indicar si es Jugador 1
+
+            // Enviar rol al cliente (Jugador 1 o Jugador 2)
+            out.writeBoolean(soyJugador1); // Enviar si es Jugador 1
+            out.writeBoolean(soyJugador2); // Enviar si es Jugador 2
             out.flush();
 
             // Escuchar mensajes del cliente
@@ -47,6 +51,8 @@ public class ServidorThread extends Thread {
             System.out.println("Cliente desconectado.");
         }
     }
+
+
 
     public void enviarEstado(EstadoJuego estado) {
         try {

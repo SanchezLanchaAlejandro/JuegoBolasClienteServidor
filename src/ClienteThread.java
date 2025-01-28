@@ -26,9 +26,7 @@ public class ClienteThread extends Thread {
         try {
             while (true) {
                 Object mensaje = in.readObject(); // Leer mensajes del servidor
-                if (CONFIRMAR_INICIO.equals(mensaje)) {
-                    cliente.actualizarEstado(new EstadoJuego(700)); // Reiniciar estado del juego
-                } else if (mensaje instanceof EstadoJuego) {
+                if (mensaje instanceof EstadoJuego) {
                     EstadoJuego estado = (EstadoJuego) mensaje;
                     cliente.actualizarEstado(estado); // Actualizar estado recibido
                     botonVelocidad.setEnabled(estado.carreraIniciada); // Habilitar botón si la carrera comenzó

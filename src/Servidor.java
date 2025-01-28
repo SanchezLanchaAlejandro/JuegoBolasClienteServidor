@@ -8,29 +8,30 @@ public class Servidor {
     public static void main(String[] args) {
         int puerto = 4444;
         CopyOnWriteArrayList<ServidorThread> clientes = new CopyOnWriteArrayList<>();
-        boolean[] confirmaciones = new boolean[2]; // Almacena si los dos jugadores han confirmado estar listos.
+        boolean[] confirmaciones = new boolean[3]; // Almacena si los dos jugadores han confirmado estar listos.
         int contadorClientes = 0; // Contador de clientes conectados,
         // para asignar roles a los clientes en función del orden de conexión (Jugador 1 o Jugador 2).
 
         try (ServerSocket serverSocket = new ServerSocket(puerto)) {
             System.out.println("Servidor iniciado en el puerto " + puerto);
 
-            // Aceptar conexiones de hasta dos clientes
-            while (clientes.size() < 2) {
+            // Aceptar conexiones de hasta tres clientes
+            while (clientes.size() < 3) {
                 Socket clienteSocket = serverSocket.accept();
 
                 // Asignar rol al cliente según el orden de entrada
                 contadorClientes++;
                 boolean soyJugador1 = (contadorClientes == 1); // El primer cliente es Jugador 1
+                boolean soyJugador2 = (contadorClientes == 2); // El segundo cliente es Jugador 2
 
                 // Crear el hilo del cliente
-                ServidorThread cliente = new ServidorThread(clienteSocket, clientes, confirmaciones, soyJugador1);
+                ServidorThread cliente = new ServidorThread(clienteSocket, clientes, confirmaciones, soyJugador1, soyJugador2);
                 clientes.add(cliente); // Añadir cliente a la lista compartida
                 cliente.start(); // Iniciar el hilo para manejar la comunicación con el cliente
             }
 
             // Esperar hasta que ambos clientes confirmen estar listos
-            while (!confirmaciones[0] || !confirmaciones[1]) {
+            while (!confirmaciones[0] || !confirmaciones[1] || !confirmaciones[2]) {
                 Thread.sleep(100);
             }
 
